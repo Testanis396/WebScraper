@@ -12,6 +12,11 @@ while True:
     tempList = doc.find_all("div", class_="row fiction-list-item")
     for item in tempList:
         print(item)
+        fictionTitle = item.find("h2", class_ = "fiction-title")
+        link = fictionTitle.find("a").attrs["href"]
+        link = "https://www.royalroad.com{}".format(link)
+        title = fictionTitle.find("a").text
+        print(link, title)
         break
     break
     # Next button
