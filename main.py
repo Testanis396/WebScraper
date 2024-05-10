@@ -16,7 +16,15 @@ while True:
         link = fictionTitle.find("a").attrs["href"]
         link = "https://www.royalroad.com{}".format(link)
         title = fictionTitle.find("a").text
-        print(link, title)
+        
+        marginBottom10 = item.find("div", class_ = "margin-bottom-10")
+        span = marginBottom10.find_all("a", class_ = "label")
+        tags = [tag.text for tag in span]
+
+        rowStats = item.find("div", _class = "row stats")
+        
+
+        print(link, title, tags)
         break
     break
     # Next button
