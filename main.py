@@ -11,20 +11,28 @@ while True:
     # Process
     tempList = doc.find_all("div", class_="row fiction-list-item")
     for item in tempList:
-        print(item)
         fictionTitle = item.find("h2", class_ = "fiction-title")
         link = fictionTitle.find("a").attrs["href"]
         link = "https://www.royalroad.com{}".format(link)
         title = fictionTitle.find("a").text
         
         marginBottom10 = item.find("div", class_ = "margin-bottom-10")
-        span = marginBottom10.find_all("a", class_ = "label")
-        tags = [tag.text for tag in span]
+        labels = marginBottom10.find_all("a", class_ = "label")
+        tags = [tag.text for tag in labels]
 
-        rowStats = item.find("div", _class = "row stats")
-        
+        rowStats = item.find("div", class_ = "row stats")
+        divs = rowStats.find_all("div", class_ = "col-sm-6")
+        stats = []
+        for div in divs:
+            text = div.text.strip()  # Extract text
+            if (text == ""):
+                title = div.attrs.get("aria-label")  # Extract title if present
+                stats.append(title)
+            else:
+                stats.append(text)
 
         print(link, title, tags)
+        print(stats)
         break
     break
     # Next button
