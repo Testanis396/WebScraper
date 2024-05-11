@@ -1,9 +1,12 @@
 from bs4 import BeautifulSoup
 import requests
+import pandas as pd
 
 url = "https://www.royalroad.com/fictions/search?page=1&advanced=true"
 pageNumber = 1
 lastNumber = 0
+novels = []
+
 while True:
     result = requests.get(url)
     doc = BeautifulSoup(result.text, "html.parser")
@@ -24,16 +27,13 @@ while True:
         divs = rowStats.find_all("div", class_ = "col-sm-6")
         stats = []
         for div in divs:
-            text = div.text.strip()  # Extract text
+            text = div.text.strip()  
             if (text == ""):
-                title = div.attrs.get("aria-label")  # Extract title if present
-                stats.append(title)
+                titleStat = div.attrs.get("aria-label")  # Extract title if present
+                stats.append(titleStat)
             else:
                 stats.append(text)
-
-        print(link, title, tags)
-        print(stats)
-        break
+        novels.append([title, link, tags, stats])
     break
     # Next button
     if (pageNumber == 1):
@@ -44,4 +44,5 @@ while True:
     pageNumber += 1
     url = "https://www.royalroad.com/fictions/search?page={}&advanced=true".format(pageNumber)
 
-
+df = pd.DataFrame(novels, columns = ["Title", "Link", "Tags", "Stats"])
+df.to_csv("royalRoadNovels.csv")
