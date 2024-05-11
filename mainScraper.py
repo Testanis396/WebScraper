@@ -6,7 +6,10 @@ import json
 url = "https://www.royalroad.com/fictions/search?page=1&advanced=true"
 pageNumber = 1
 lastNumber = 0
-novels = []
+
+with open("royalRoadNovels.json", "w") as jsonfile:
+        jsonfile.write("[")
+        jsonfile.write('\n')
 
 while True:
     result = requests.get(url)
@@ -14,7 +17,10 @@ while True:
 
     # Process
     tempList = doc.find_all("div", class_="row fiction-list-item")
-    for item in tempList:
+    limit = len(tempList)
+    
+    for j in range(limit):
+        item = tempList[j]
         fictionTitle = item.find("h2", class_ = "fiction-title")
         link = fictionTitle.find("a").attrs["href"]
         link = "https://www.royalroad.com{}".format(link)
@@ -27,6 +33,7 @@ while True:
         rowStats = item.find("div", class_ = "row stats")
         divs = rowStats.find_all("div", class_ = "col-sm-6")
         stats = {}
+
         for i in range(len(divs)):
             div = divs[i]
             text = div.text.strip()  
@@ -66,23 +73,44 @@ while True:
             elif(i == 5):
                 time = div.find("time")  # Extract title if present
                 last_updated = time.attrs.get("datetime")
-                stats["Last Updated"] = last_updated
-        novels.append({
+                stats["Last Updated"] = last_updated  
+        
+        novel = {
             "Title": title, 
             "Link": link, 
             "Tags": tags, 
             "Stats": stats
-            })
+            }
         
-    break
+        if (pageNumber == lastNumber and j == limit-1):
+            # Append last novel to .json file
+            with open("royalRoadNovels.json", "a") as jsonfile:
+                json.dump(novel, jsonfile, indent=4)
+                jsonfile.write('\n')
+                break
+        
+        # Append to .json file
+        with open("royalRoadNovels.json", "a") as jsonfile:
+            json.dump(novel, jsonfile, indent=4)
+            jsonfile.write(',')
+            jsonfile.write('\n')
+
     # Next button
     if (pageNumber == 1):
         pagUl = doc.find("ul", class_="pagination")
         lastBtn = pagUl.find("a", string = "Last »")
-        lastNumber = lastBtn.get("data-page")
-    elif (pageNumber == lastNumber): break
+        lastNumber = int(lastBtn.get("data-page"))
+    
+    if (pageNumber == lastNumber): 
+        print("processed page {} out of {}".format(pageNumber, lastNumber))
+        
+        # Append to .json file
+        with open("royalRoadNovels.json", "a") as jsonfile:
+            jsonfile.write(']')
+        break
+    
+    print("processed page {} out of {}".format(pageNumber, lastNumber))
     pageNumber += 1
     url = "https://www.royalroad.com/fictions/search?page={}&advanced=true".format(pageNumber)
 
-with open("royalRoadNovels.json", "w") as jsonfile:
-    json.dump(novels, jsonfile, indent=4)
+
