@@ -1,14 +1,21 @@
 from bs4 import BeautifulSoup
 import requests
 import json
+from pathlib import Path
+import sys
 
 url = "https://www.royalroad.com/fictions/search?page=1&advanced=true"
 pageNumber = 1
 lastNumber = 0
 lastPage = False
-filename = "royalRoadNovels1.json"
+fileName = "royalRoadNovels1.json"
+filePath = Path(fileName)
 
-with open(filename, "w") as jsonfile:
+if filePath.exists():
+    print("{} already exists, change JSON file.".format(filePath))
+    sys.exit()
+
+with open(fileName, "w") as jsonfile:
         jsonfile.write("[\n")
 
 while (not lastPage):
@@ -88,14 +95,14 @@ while (not lastPage):
         
         if (pageNumber == lastNumber and j == limit-1):
             # Append final novel to .json file
-            with open(filename, "a") as jsonfile:
+            with open(fileName, "a") as jsonfile:
                 json.dump(novel, jsonfile, indent=4)
                 jsonfile.write('\n')
                 print("processed novel: {}".format(title))
                 break
         
         # Append to .json file
-        with open(filename, "a") as jsonfile:
+        with open(fileName, "a") as jsonfile:
             json.dump(novel, jsonfile, indent=4)
             jsonfile.write(',\n')
             print("processed novel: {}".format(title))
@@ -117,6 +124,6 @@ while (not lastPage):
     url = "https://www.royalroad.com/fictions/search?page={}&advanced=true".format(pageNumber)
 
 # Append to .json file
-with open(filename, "a") as jsonfile:
+with open(fileName, "a") as jsonfile:
     jsonfile.write(']')
  
