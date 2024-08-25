@@ -1,34 +1,35 @@
 from bs4 import BeautifulSoup
 import requests
-import pandas as pd
 import json
 
 url = "https://www.royalroad.com/fictions/search?page=1&advanced=true"
 pageNumber = 1
 lastNumber = 0
+lastPage = False
+filename = "royalRoadNovels1.json"
 
-with open("royalRoadNovels.json", "w") as jsonfile:
-        jsonfile.write("[")
-        jsonfile.write('\n')
+with open(filename, "w") as jsonfile:
+        jsonfile.write("[\n")
 
-while True:
+while (not lastPage):
     result = requests.get(url)
     doc = BeautifulSoup(result.text, "html.parser")
 
     # Process
     tempList = doc.find_all("div", class_="row fiction-list-item")
     limit = len(tempList)
-    
+  
     for j in range(limit):
         item = tempList[j]
         fictionTitle = item.find("h2", class_ = "fiction-title")
+        title = fictionTitle.find("a").text.strip()
+
         link = fictionTitle.find("a").attrs["href"]
         link = "https://www.royalroad.com{}".format(link)
-        title = fictionTitle.find("a").text
         
         marginBottom10 = item.find("div", class_ = "margin-bottom-10")
         labels = marginBottom10.find_all("a", class_ = "label")
-        tags = [tag.text for tag in labels]
+        tags = [tag.text.strip() for tag in labels]
 
         rowStats = item.find("div", class_ = "row stats")
         divs = rowStats.find_all("div", class_ = "col-sm-6")
@@ -47,33 +48,36 @@ while True:
             # 'Friday, May 10, 2024 1:31:18 AM'
             # ]
             ##
-            ## format stats array to 
+            ## format stats array for efficient querying
             #  {
-            #  "Followers": "22,937",
-            #  "Rating": "4.84 out of 5",
-            #  "Pages": "2,698",
-            #  "Views": "10,848,659",
-            #  "Chapters": "141",
-            #  "Last Updated": "Friday, May 10, 2024 1:31:18 AM"
+            # "Followers": 23337, int
+            # "Rating": 4.84, float
+            # "Pages": 2932, int
+            # "Views": 19686174, int
+            # "Chapters": 109, int
+            # "Last Updated": "2023-07-06T17:47:41.0000000+00:00" string
             ##
 
-            # Remove non-numeric characters from the text
-            numericText = ''.join(filter(str.isdigit, text))
+            # Extract first element (number) from string and convert to int
+            try:
+                number = int(text.split()[0].replace(",",""))
+            except:
+                pass
             if(i == 0):
-                stats["Followers"] = numericText
+                stats["Followers"] = number
             elif(i == 1):
                 ratingStat = div.attrs.get("aria-label")
-                stats["Rating"] = ratingStat.split(": ")[1].split(" out of ")[0]
+                stats["Rating"] = float(ratingStat.split(": ")[1].split(" out of ")[0])
             elif(i == 2):
-                stats["Pages"] = numericText
+                stats["Pages"] = number
             elif(i == 3):
-                stats["Views"] = numericText.replace(",", "")
+                stats["Views"] = number
             elif(i == 4):
-                stats["Chapters"] = numericText
+                stats["Chapters"] = number
             elif(i == 5):
                 time = div.find("time")  # Extract title if present
-                last_updated = time.attrs.get("datetime")
-                stats["Last Updated"] = last_updated  
+                dateString = time.attrs.get("datetime")
+                stats["Last Updated"] = dateString
         
         novel = {
             "Title": title, 
@@ -83,34 +87,36 @@ while True:
             }
         
         if (pageNumber == lastNumber and j == limit-1):
-            # Append last novel to .json file
-            with open("royalRoadNovels.json", "a") as jsonfile:
+            # Append final novel to .json file
+            with open(filename, "a") as jsonfile:
                 json.dump(novel, jsonfile, indent=4)
                 jsonfile.write('\n')
+                print("processed novel: {}".format(title))
                 break
         
         # Append to .json file
-        with open("royalRoadNovels.json", "a") as jsonfile:
+        with open(filename, "a") as jsonfile:
             json.dump(novel, jsonfile, indent=4)
-            jsonfile.write(',')
-            jsonfile.write('\n')
+            jsonfile.write(',\n')
+            print("processed novel: {}".format(title))
+    
+    print("processed page {} out of {}".format(pageNumber, lastNumber))
 
-    # Next button
-    if (pageNumber == 1):
+    # Last button, check if last page
+    try: 
         pagUl = doc.find("ul", class_="pagination")
         lastBtn = pagUl.find("a", string = "Last »")
         lastNumber = int(lastBtn.get("data-page"))
+    except:
+        if (pageNumber == lastNumber):
+            lastPage = True
+        else:
+            pass
     
-    if (pageNumber == lastNumber): 
-        print("processed page {} out of {}".format(pageNumber, lastNumber))
-        
-        # Append to .json file
-        with open("royalRoadNovels.json", "a") as jsonfile:
-            jsonfile.write(']')
-        break
-    
-    print("processed page {} out of {}".format(pageNumber, lastNumber))
     pageNumber += 1
     url = "https://www.royalroad.com/fictions/search?page={}&advanced=true".format(pageNumber)
 
-
+# Append to .json file
+with open(filename, "a") as jsonfile:
+    jsonfile.write(']')
+ 
